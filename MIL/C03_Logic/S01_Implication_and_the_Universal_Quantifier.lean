@@ -7,8 +7,21 @@ namespace C03S01
 
 #check ∀ x y ε : ℝ, 0 < ε → ε ≤ 1 → |x| < ε → |y| < ε → |x * y| < ε
 
-theorem my_lemma : ∀ x y ε : ℝ, 0 < ε → ε ≤ 1 → |x| < ε → |y| < ε → |x * y| < ε :=
-  sorry
+theorem my_lemma : ∀ x y ε : ℝ, 0 < ε → ε ≤ 1 → |x| < ε → |y| < ε → |x * y| < ε := by
+  intro x y ε h1 h2 h3 h4
+  calc
+    |x * y| = |x| * |y| := by
+      apply abs_mul
+    _ ≤  ε * |y| := by
+      apply mul_le_mul
+      linarith
+      linarith
+      apply abs_nonneg
+      linarith
+    _ < ε * 1 := by
+      rw [mul_lt_mul_left h1]
+      linarith
+    _ = ε := by ring
 
 section
 variable (a b δ : ℝ)
@@ -21,8 +34,31 @@ variable (ha : |a| < δ) (hb : |b| < δ)
 
 end
 
-theorem my_lemma2 : ∀ {x y ε : ℝ}, 0 < ε → ε ≤ 1 → |x| < ε → |y| < ε → |x * y| < ε :=
-  sorry
+theorem my_lemma2 : ∀ {x y ε : ℝ}, 0 < ε → ε ≤ 1 → |x| < ε → |y| < ε → |x * y| < ε := by
+  intro x y ε h1 h2 h3 h4
+  calc
+    |x * y| = |x| * |y| := by
+      apply abs_mul
+    _ ≤  ε * |y| := by
+      apply mul_le_mul
+      apply le_of_lt
+      exact h3
+      apply le_refl
+      apply abs_nonneg
+      apply le_of_lt
+      exact h1
+    _ < ε * 1 := by
+      have h5 : |y| < 1 := by
+        apply lt_of_lt_of_le
+        exact h4
+        exact h2
+      apply (mul_lt_mul_left h1).mpr
+      exact h5
+    _ = ε := by ring
+
+
+
+
 
 section
 variable (a b δ : ℝ)
@@ -60,11 +96,17 @@ example (hfa : FnUb f a) (hgb : FnUb g b) : FnUb (fun x ↦ f x + g x) (a + b) :
   intro x
   dsimp
   apply add_le_add
-  apply hfa
-  apply hgb
+  · apply hfa
+  · apply hgb
 
-example (hfa : FnLb f a) (hgb : FnLb g b) : FnLb (fun x ↦ f x + g x) (a + b) :=
-  sorry
+example (hfa : FnLb f a) (hgb : FnLb g b) : FnLb (fun x ↦ f x + g x) (a + b) := by
+  intro x
+  dsimp
+  apply add_le_add
+  · show a ≤ f x
+    apply hfa
+  · show b ≤ g x
+    apply hgb
 
 example (nnf : FnLb f 0) (nng : FnLb g 0) : FnLb (fun x ↦ f x * g x) 0 :=
   sorry
