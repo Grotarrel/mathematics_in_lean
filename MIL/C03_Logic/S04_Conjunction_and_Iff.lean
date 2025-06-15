@@ -63,8 +63,18 @@ example {x y : ℝ} (h : x ≤ y ∧ x ≠ y) : ¬y ≤ x := by
 example {x y : ℝ} (h : x ≤ y ∧ x ≠ y) : ¬y ≤ x :=
   fun h' ↦ h.right (le_antisymm h.left h')
 
-example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m :=
-  sorry
+example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m := by
+  rcases h with ⟨hleft, hright⟩
+  constructor
+  · assumption
+  · intro n_div_m
+    apply hright
+    apply dvd_antisymm
+    assumption
+    assumption
+
+
+
 
 example : ∃ x : ℝ, 2 < x ∧ x < 4 :=
   ⟨5 / 2, by norm_num, by norm_num⟩
@@ -101,15 +111,63 @@ example {x y : ℝ} (h : x ≤ y) : ¬y ≤ x ↔ x ≠ y := by
 example {x y : ℝ} (h : x ≤ y) : ¬y ≤ x ↔ x ≠ y :=
   ⟨fun h₀ h₁ ↦ h₀ (by rw [h₁]), fun h₀ h₁ ↦ h₀ (le_antisymm h h₁)⟩
 
-example {x y : ℝ} : x ≤ y ∧ ¬y ≤ x ↔ x ≤ y ∧ x ≠ y :=
-  sorry
+example {x y : ℝ} : x ≤ y ∧ ¬y ≤ x ↔ x ≤ y ∧ x ≠ y := by
+  constructor
+  · show x ≤ y ∧ ¬y ≤ x → x ≤ y ∧ x ≠ y
+    rintro ⟨x_le_y, ny_le_x⟩
+    constructor
+    · show x ≤ y
+      assumption
+    · show x ≠ y
+      contrapose! ny_le_x
+      rw [ny_le_x]
+  · show x ≤ y ∧ x ≠ y → x ≤ y ∧ ¬y ≤ x
+    rintro ⟨ x_le_y, x_neq_y⟩
+    constructor
+    · show x ≤ y
+      assumption
+    · show ¬ y ≤ x
+      intro y_le_x
+      have : x = y := by
+        apply le_antisymm
+        assumption
+        assumption
+      contradiction
+
 
 theorem aux {x y : ℝ} (h : x ^ 2 + y ^ 2 = 0) : x = 0 :=
-  have h' : x ^ 2 = 0 := by sorry
+  have h' : x ^ 2 = 0 := by
+    have x_pos : 0 ≤ x ^ 2 := by
+      apply pow_two_nonneg
+    have x_neg : x^2 ≤ 0 := by
+      calc
+        x^2 ≤ -y^2 := by linarith
+        _ ≤ 0 := by
+          have : 0 ≤ y^2 := by apply pow_two_nonneg
+          linarith
+    exact le_antisymm x_neg x_pos
   pow_eq_zero h'
 
-example (x y : ℝ) : x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 :=
-  sorry
+
+example (x y : ℝ) : x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 := by
+  constructor
+  · intro sum_sq_zero
+    show x = 0 ∧ y = 0
+    constructor
+    · show x = 0
+      apply aux sum_sq_zero
+    · show y = 0
+      have sum_sq_zero' : y^2 + x^2 = 0 := by
+        calc
+          y^2 + x^2 = x^2 + y^2 := by apply add_comm
+          _ = 0 := by assumption
+      apply aux sum_sq_zero'
+  · rintro ⟨x_nul, y_nul⟩
+    show x ^ 2 + y ^ 2 = 0
+    rw [x_nul, y_nul]
+    ring
+
+
 
 section
 
@@ -130,7 +188,11 @@ theorem not_monotone_iff {f : ℝ → ℝ} : ¬Monotone f ↔ ∃ x y, x ≤ y �
   rfl
 
 example : ¬Monotone fun x : ℝ ↦ -x := by
-  sorry
+  rw [not_monotone_iff]
+  use 0
+  use 1
+  norm_num
+
 
 section
 variable {α : Type*} [PartialOrder α]
@@ -138,7 +200,25 @@ variable (a b : α)
 
 example : a < b ↔ a ≤ b ∧ a ≠ b := by
   rw [lt_iff_le_not_le]
-  sorry
+  constructor
+  · show a ≤ b ∧ ¬b ≤ a → a ≤ b ∧ a ≠ b
+    rintro ⟨ h1, h2⟩
+    constructor
+    · show a ≤ b
+      assumption
+    · show a ≠ b
+      contrapose! h2
+      rw [h2]
+  · show a ≤ b ∧ a ≠ b → a ≤ b ∧ ¬b ≤ a
+    rintro ⟨ h1, h2⟩
+    constructor
+    · show a ≤ b
+      assumption
+    · show ¬b ≤ a
+      intro b_le_a
+      have : a = b := by
+        apply le_antisymm h1 b_le_a
+      contradiction
 
 end
 
@@ -148,10 +228,17 @@ variable (a b c : α)
 
 example : ¬a < a := by
   rw [lt_iff_le_not_le]
-  sorry
+  tauto
 
 example : a < b → b < c → a < c := by
   simp only [lt_iff_le_not_le]
-  sorry
+  rintro ⟨ h1, h2⟩ ⟨ h3, h4⟩
+  constructor
+  · show a ≤ c
+    trans b <;> assumption
+  · show ¬ c ≤ a
+    intro c_le_a
+    have : c ≤ b := by trans a <;> assumption
+    contradiction
 
 end
