@@ -58,13 +58,25 @@ example : x < |y| → x < y ∨ x < -y := by
 namespace MyAbs
 
 theorem le_abs_self (x : ℝ) : x ≤ |x| := by
-  sorry
+  rcases le_or_gt 0 x with h | h
+  · rw [abs_of_nonneg h]
+  · rw [abs_of_neg h]
+    linarith
 
 theorem neg_le_abs_self (x : ℝ) : -x ≤ |x| := by
-  sorry
+  rcases le_or_gt 0 x with h | h
+  · rw [abs_of_nonneg h]
+    linarith
+  · rw [abs_of_neg h]
 
 theorem abs_add (x y : ℝ) : |x + y| ≤ |x| + |y| := by
-  sorry
+  rcases le_or_gt 0 (x+y) with h | h
+  · rw [abs_of_nonneg h]
+    apply add_le_add <;> apply le_abs_self
+  · rw [abs_of_neg h]
+    calc
+      -(x+y) = -x + -y := by ring
+      _ ≤ |x| + |y| := by apply add_le_add <;> apply neg_le_abs_self
 
 theorem lt_abs : x < |y| ↔ x < y ∨ x < -y := by
   sorry
@@ -91,10 +103,24 @@ example {m n k : ℕ} (h : m ∣ n ∨ m ∣ k) : m ∣ n * k := by
     apply dvd_mul_right
 
 example {z : ℝ} (h : ∃ x y, z = x ^ 2 + y ^ 2 ∨ z = x ^ 2 + y ^ 2 + 1) : z ≥ 0 := by
-  sorry
+  rcases h with ⟨x,y,h1 | h2⟩ <;> linarith [pow_two_nonneg x, pow_two_nonneg y]
 
 example {x : ℝ} (h : x ^ 2 = 1) : x = 1 ∨ x = -1 := by
-  sorry
+  have h2 : (x - 1) * (x + 1) = 0 :=
+    calc
+      (x - 1) * (x + 1) = x^2 - 1 := by ring
+      _ = 0 := by rw [h]; ring
+  rcases eq_zero_or_eq_zero_of_mul_eq_zero h2 with h3 | h3
+  · left
+    calc
+      x = (x-1) + 1 := by ring
+      _ = 0 + 1 := by rw [h3]
+      _ = 1 := by ring
+  · right
+    calc
+      x = (x+1) - 1 := by ring
+      _ = 0 - 1 := by rw [h3]
+      _ = -1 := by ring
 
 example {x y : ℝ} (h : x ^ 2 = y ^ 2) : x = y ∨ x = -y := by
   sorry
@@ -104,7 +130,21 @@ variable {R : Type*} [CommRing R] [IsDomain R]
 variable (x y : R)
 
 example (h : x ^ 2 = 1) : x = 1 ∨ x = -1 := by
-  sorry
+  have h2 : (x - 1) * (x + 1) = 0 :=
+    calc
+      (x - 1) * (x + 1) = x^2 - 1 := by ring
+      _ = 0 := by rw [h]; ring
+  rcases eq_zero_or_eq_zero_of_mul_eq_zero h2 with h3 | h3
+  · left
+    calc
+      x = (x-1) + 1 := by ring
+      _ = 0 + 1 := by rw [h3]
+      _ = 1 := by ring
+  · right
+    calc
+      x = (x+1) - 1 := by ring
+      _ = 0 - 1 := by rw [h3]
+      _ = -1 := by ring
 
 example (h : x ^ 2 = y ^ 2) : x = y ∨ x = -y := by
   sorry
@@ -121,8 +161,18 @@ example (P : Prop) : ¬¬P → P := by
   intro h
   by_cases h' : P
   · assumption
-  contradiction
+  · contradiction
 
 example (P Q : Prop) : P → Q ↔ ¬P ∨ Q := by
-  sorry
-
+  constructor
+  · intro h
+    by_cases h' : P
+    · right
+      exact h h'
+    · left
+      assumption
+  · intro h
+    intro hp
+    rcases h with h' | h'
+    · contradiction
+    · assumption
